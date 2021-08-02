@@ -34,7 +34,7 @@ import java.util.List;
 public class RobotContainer {
   // The robot's subsystems
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
-  private final Arm m_arm = new Arm();
+//   private final Arm m_arm = new Arm();
 
   // The driver's controller
   public static XboxController m_driverController =
@@ -54,7 +54,7 @@ public class RobotContainer {
             () ->
                 m_robotDrive.arcadeDrive(
                     -m_driverController.getY(GenericHID.Hand.kLeft),
-                    m_driverController.getX(GenericHID.Hand.kLeft)),
+                    m_driverController.getX(GenericHID.Hand.kRight)),
             m_robotDrive));
   }
 
