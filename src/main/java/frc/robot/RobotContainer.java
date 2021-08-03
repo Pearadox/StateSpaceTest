@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj.trajectory.constraint.DifferentialDriveVoltageConstraint;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.RamseteCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -52,7 +53,7 @@ public class RobotContainer {
         // hand, and turning controlled by the right.
         new RunCommand(
             () ->
-                m_robotDrive.arcadeDrive(
+                m_robotDrive.HelixDrive(
                     -m_driverController.getY(GenericHID.Hand.kLeft),
                     m_driverController.getX(GenericHID.Hand.kRight)),
             m_robotDrive));
@@ -66,9 +67,9 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // Drive at half speed when the right bumper is held
-    new JoystickButton(m_driverController, Button.kBumperRight.value)
-        .whenPressed(() -> m_robotDrive.setMaxOutput(0.5))
-        .whenReleased(() -> m_robotDrive.setMaxOutput(1));
+    // new JoystickButton(m_driverController, Button.kBumperRight.value)
+    //     .whenPressed(() -> m_robotDrive.setMaxOutput(0.5))
+    //     .whenReleased(() -> m_robotDrive.setMaxOutput(1));
   }
 
   public DriveSubsystem getRobotDrive() {
@@ -76,9 +77,9 @@ public class RobotContainer {
   }
 
   /** Zeros the outputs of all subsystems. */
-  public void zeroAllOutputs() {
-    m_robotDrive.tankDriveVolts(0, 0);
-  }
+//   public void zeroAllOutputs() {
+//     m_robotDrive.tankDriveVolts(0, 0);
+//   }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
@@ -119,28 +120,29 @@ public class RobotContainer {
             // Pass config
             config);
 
-    RamseteCommand ramseteCommand =
-        new RamseteCommand(
-            exampleTrajectory,
-            m_robotDrive::getPose,
-            new RamseteController(
-                Constants.AutoConstants.kRamseteB, Constants.AutoConstants.kRamseteZeta),
-            new SimpleMotorFeedforward(
-                Constants.DriveConstants.ksVolts,
-                Constants.DriveConstants.kvVoltSecondsPerMeter,
-                Constants.DriveConstants.kaVoltSecondsSquaredPerMeter),
-            Constants.DriveConstants.kDriveKinematics,
-            m_robotDrive::getWheelSpeeds,
-            new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0),
-            new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0),
-            // RamseteCommand passes volts to the callback
-            m_robotDrive::tankDriveVolts,
-            m_robotDrive);
+    // RamseteCommand ramseteCommand =
+    //     new RamseteCommand(
+    //         exampleTrajectory,
+    //         m_robotDrive::getPose,
+    //         new RamseteController(
+    //             Constants.AutoConstants.kRamseteB, Constants.AutoConstants.kRamseteZeta),
+    //         new SimpleMotorFeedforward(
+    //             Constants.DriveConstants.ksVolts,
+    //             Constants.DriveConstants.kvVoltSecondsPerMeter,
+    //             Constants.DriveConstants.kaVoltSecondsSquaredPerMeter),
+    //         Constants.DriveConstants.kDriveKinematics,
+    //         m_robotDrive::getWheelSpeeds,
+    //         new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0),
+    //         new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0),
+    //         // RamseteCommand passes volts to the callback
+    //         m_robotDrive::tankDriveVolts,
+    //         m_robotDrive);
 
-    // Reset odometry to starting pose of trajectory.
-    m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
+    // // Reset odometry to starting pose of trajectory.
+    // m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
 
-    // Run path following command, then stop at the end.
-    return ramseteCommand.andThen(() -> m_robotDrive.tankDriveVolts(0, 0));
+    // // Run path following command, then stop at the end.
+    // return ramseteCommand.andThen(() -> m_robotDrive.tankDriveVolts(0, 0));
+    return new PrintCommand("test");
   }
 }

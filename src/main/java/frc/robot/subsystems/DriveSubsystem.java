@@ -7,6 +7,7 @@ package frc.robot.subsystems;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANEncoder;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.hal.SimDouble;
@@ -18,6 +19,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.Constants;
+import frc.robot.RobotContainer;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
@@ -49,12 +51,12 @@ public class DriveSubsystem extends SubsystemBase {
   private final CANSparkMax frontRightMotor = new CANSparkMax(Constants.DriveConstants.FRONT_RIGHT_MOTOR, MotorType.kBrushless);
   private final CANSparkMax backRightMotor = new CANSparkMax(Constants.DriveConstants.BACK_RIGHT_MOTOR, MotorType.kBrushless);
   
-  private final SpeedControllerGroup m_leftMotors = new SpeedControllerGroup(frontLeftMotor, backLeftMotor);
-  private final SpeedControllerGroup m_rightMotors = new SpeedControllerGroup(frontRightMotor, backRightMotor);
+  // private final SpeedControllerGroup m_leftMotors = new SpeedControllerGroup(frontLeftMotor, backLeftMotor);
+  // private final SpeedControllerGroup m_rightMotors = new SpeedControllerGroup(frontRightMotor, backRightMotor);
   private int update = 0;
 
   // The robot's drive
-  private final DifferentialDrive m_drive = new DifferentialDrive(m_leftMotors, m_rightMotors);
+  // private final DifferentialDrive m_drive = new DifferentialDrive(m_leftMotors, m_rightMotors);
 
   public final CANEncoder m_leftEncoder = frontLeftMotor.getEncoder();  
   public final CANEncoder m_rightEncoder = frontRightMotor.getEncoder();
@@ -90,10 +92,10 @@ public class DriveSubsystem extends SubsystemBase {
   private String devicekeybackright = "SPARK MAX [3]";
   private String fieldKeyPosition = "Position";
   private String fieldKeyVelocity = "Velocity";
-  private SimDeviceSim m_frontleftEncoderSim = new SimDeviceSim(devicekeyfrontleft);
-  private SimDeviceSim m_frontrightEncoderSim = new SimDeviceSim(devicekeyfrontright);
-  private SimDeviceSim m_backleftEncoderSim = new SimDeviceSim(devicekeybackleft);
-  private SimDeviceSim m_backrightEncoderSim = new SimDeviceSim(devicekeybackright);
+  private SimDeviceSim m_frontleftEncoderSim;
+  private SimDeviceSim m_frontrightEncoderSim;
+  private SimDeviceSim m_backleftEncoderSim;
+  private SimDeviceSim m_backrightEncoderSim;
   // The Field2d class shows the field in the sim GUI
   private Field2d m_fieldSim;
   private ADXRS450_GyroSim m_gyroSim;
@@ -105,6 +107,22 @@ public class DriveSubsystem extends SubsystemBase {
     // m_leftEncoder.setDistancePerPulse(Constants.DriveConstants.kEncoderDistancePerPulse);
     // m_rightEncoder.setDistancePerPulse(Constants.DriveConstants.kEncoderDistancePerPulse);
     
+
+
+    frontRightMotor.restoreFactoryDefaults();
+    backRightMotor.restoreFactoryDefaults();
+    frontLeftMotor.restoreFactoryDefaults();
+    backLeftMotor.restoreFactoryDefaults();
+
+    frontRightMotor.setIdleMode(IdleMode.kBrake);
+    frontLeftMotor.setIdleMode(IdleMode.kBrake);
+    backRightMotor.setIdleMode(IdleMode.kCoast);
+    backLeftMotor.setIdleMode(IdleMode.kCoast);
+
+    backLeftMotor.follow(frontLeftMotor);
+    backRightMotor.follow(frontRightMotor);
+    frontRightMotor.setInverted(true);
+
     m_leftEncoder.setPositionConversionFactor(Constants.DriveConstants.DISTANCE_PER_REVOLUTION / Constants.DriveConstants.kDriveGearing);
     m_rightEncoder.setPositionConversionFactor(Constants.DriveConstants.DISTANCE_PER_REVOLUTION / Constants.DriveConstants.kDriveGearing);
     m_gyro.reset();
@@ -139,6 +157,10 @@ public class DriveSubsystem extends SubsystemBase {
       // The encoder and gyro angle sims let us set simulated sensor readings
       // m_leftEncoderSim = new SimDeviceSim(devicekeyleft);
       // m_rightEncoderSim = new SimDeviceSim(devicekeyright);
+      m_frontleftEncoderSim = new SimDeviceSim(devicekeyfrontleft);
+      m_frontrightEncoderSim = new SimDeviceSim(devicekeyfrontright);
+      m_backleftEncoderSim = new SimDeviceSim(devicekeybackleft);
+      m_backrightEncoderSim = new SimDeviceSim(devicekeybackright);
       m_gyroSim = new ADXRS450_GyroSim(m_gyro);
 
       // the Field2d class lets us visualize our robot in the simulation GUI.
@@ -155,7 +177,7 @@ public class DriveSubsystem extends SubsystemBase {
         m_leftEncoder.getPosition(),
         m_rightEncoder.getPosition());
     m_fieldSim.setRobotPose(getPose());
-    m_drive.feed();
+    // m_drive.feed();
   }
 
   @Override
@@ -166,8 +188,8 @@ public class DriveSubsystem extends SubsystemBase {
     // move forward.
     update += 1;
     m_drivetrainSimulator.setInputs(
-        m_leftMotors.get() * RobotController.getBatteryVoltage(),
-        m_rightMotors.get() * RobotController.getBatteryVoltage());
+        frontLeftMotor.get() * RobotController.getBatteryVoltage(),
+        frontRightMotor.get() * RobotController.getBatteryVoltage());
     m_drivetrainSimulator.update(0.020);
     
     SimDouble positionFrontLeft = m_frontleftEncoderSim.getDouble(fieldKeyPosition);
@@ -265,8 +287,53 @@ public class DriveSubsystem extends SubsystemBase {
    * @param rot the commanded rotation
    */
   public void arcadeDrive(double fwd, double rot) {
-    m_drive.arcadeDrive(fwd, rot);
+    
+    // if(RobotContainer.driverJoystick.getRawButton(11))
+    // {
+    //   frontLeftMotor.set(0.2 * (fwd + rot));
+    //   frontRightMotor.set(fwd - rot);
+    // }
+    // else if(RobotContainer.driverJoystick.getRawButton(12))
+    // {
+    //   frontLeftMotor.set(fwd + rot);
+    //   frontRightMotor.set(0.2 * (fwd - rot));
+    // }
+    // else {
+      frontLeftMotor.set(fwd + rot);
+      frontRightMotor.set(fwd - rot);
+      if(update > 50) {
+        update = 0;
+        System.out.print("Left motor: ");
+        System.out.print(fwd+rot);
+        System.out.print(" ");
+        System.out.println(frontLeftMotor.get());
+      }
+    // }
   }
+  public void HelixDrive(double throttle, double twist) {
+    // double throttle = RobotContainer.driverJoystick.getY();
+    // double twist = RobotContainer.driverJoystick.getZ() * -0.65;
+
+    double saturatedInput;
+    double greaterInput = Math.max(Math.abs(twist), Math.abs(throttle));
+    double lesserInput = Math.min(Math.abs(twist), Math.abs(throttle));
+
+    if (greaterInput > 0.0) 
+      saturatedInput = (lesserInput/greaterInput) + 1.0;
+    else 
+      saturatedInput = 1.0;
+
+    throttle = throttle / saturatedInput;
+    twist = twist/saturatedInput;
+    if(Math.abs(throttle) < 0.1) 
+      throttle = 0;
+    if(Math.abs(twist) < 0.1) 
+      twist = 0;
+    
+    arcadeDrive(throttle, twist);
+  }
+
+  
 
   /**
    * Controls the left and right sides of the drive directly with voltages.
@@ -274,16 +341,16 @@ public class DriveSubsystem extends SubsystemBase {
    * @param leftVolts the commanded left output
    * @param rightVolts the commanded right output
    */
-  public void tankDriveVolts(double leftVolts, double rightVolts) {
-    var batteryVoltage = RobotController.getBatteryVoltage();
-    if (Math.max(Math.abs(leftVolts), Math.abs(rightVolts)) > batteryVoltage) {
-      leftVolts *= batteryVoltage / 12.0;
-      rightVolts *= batteryVoltage / 12.0;
-    }
-    m_leftMotors.setVoltage(leftVolts);
-    m_rightMotors.setVoltage(-rightVolts);
-    m_drive.feed();
-  }
+  // public void tankDriveVolts(double leftVolts, double rightVolts) {
+  //   var batteryVoltage = RobotController.getBatteryVoltage();
+  //   if (Math.max(Math.abs(leftVolts), Math.abs(rightVolts)) > batteryVoltage) {
+  //     leftVolts *= batteryVoltage / 12.0;
+  //     rightVolts *= batteryVoltage / 12.0;
+  //   }
+  //   frontLeftMotor.setVoltage(leftVolts);
+  //   frontRightMotor.setVoltage(-rightVolts);
+  //   // m_drive.feed();
+  // }
 
   /** Resets the drive encoders to currently read a position of 0. */
   public void resetEncoders() {
@@ -325,9 +392,10 @@ public class DriveSubsystem extends SubsystemBase {
    *
    * @param maxOutput the maximum output to which the drive will be constrained
    */
-  public void setMaxOutput(double maxOutput) {
-    m_drive.setMaxOutput(maxOutput);
-  }
+  // public void setMaxOutput(double maxOutput) {
+  //   frontLeftMotor.set
+  //   m_drive.setMaxOutput(maxOutput);
+  // }
 
   /** Zeroes the heading of the robot. */
   public void zeroHeading() {
